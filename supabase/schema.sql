@@ -1,0 +1,9 @@
+-- Skema PostgreSQL/Supabase FloodOps (PRD bagian 12). Jalankan di SQL Editor Supabase.
+create extension if not exists postgis;
+create table users (id bigserial primary key, name text not null, email text unique not null, password_hash text not null, role text not null check (role in ('pengguna','petugas','admin')), created_at timestamptz default now());
+create table road_segments (id bigserial primary key, road_name text not null, geometry geometry(LineString,4326), road_length numeric, region_id text);
+create table flood_reports (id bigserial primary key, road_segment_id bigint references road_segments(id), reported_depth int check (reported_depth between 0 and 300), description text, photo_url text, reported_at timestamptz not null default now(), updated_at timestamptz not null default now(), verification_status text not null default 'belum_terverifikasi' check (verification_status in ('terverifikasi','belum_terverifikasi','ditolak')), source_type text not null check (source_type in ('warga','pengguna','petugas','sintetis')), tracking_code text unique, reporter_contact text);
+create table critical_facilities (id bigserial primary key, facility_name text not null, facility_type text not null, location geometry(Point,4326), region_id text);
+create table priority_results (id bigserial primary key, road_segment_id bigint references road_segments(id), depth_score int, facility_impact_score int, alternative_access_score int, total_score numeric, calculated_at timestamptz default now());
+create table simulation_runs (id bigserial primary key, selected_road_segment_id bigint references road_segments(id), input_parameters jsonb, result_summary jsonb, created_by bigint references users(id), created_at timestamptz default now());
+create table audit_logs (id bigserial primary key, user_id bigint references users(id), action text, object_type text, object_id bigint, created_at timestamptz default now());
